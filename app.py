@@ -2,19 +2,14 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
-@app.route('/strona_glowna')
+@app.route('/')
 def strona_glowna():
-    return render_template('home.html', title = "Strona główna")
+    return render_template('home.html', title = "Home")
 
-@app.route('/wlasne_przepisy')
+@app.route('/profile')
 
-def wlasne_przepisy():
-    return render_template('wlasne_przepisy.html', title = "Własne przepisy")
-
-@app.route('/galeria')
-def galeria():
-    return render_template('about.html', title = "Galeria")
-
+def profile():
+    return render_template('profile.html', title = "Profile")
 
 if __name__ == '__main__':
     app.run(debug=True)
