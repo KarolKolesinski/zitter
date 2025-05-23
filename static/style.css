@@ -1,0 +1,322 @@
+/* style.css - zaktualizowana wersja z ciemnym motywem */
+
+/* Reset i podstawowe style */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #ffffff;
+    background-color: #222121;
+}
+
+/* Główny kontener układu */
+.layout-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Panel boczny */
+.sidebar {
+    width: 250px;
+    background-color: #181818;
+    padding: 2rem 1rem;
+    position: fixed;
+    height: 100%;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar nav ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.sidebar nav ul li a {
+    color: #e0e0e0;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar nav ul li a:hover {
+    background-color: #333;
+    color: #4CAF50;
+    transform: translateX(5px);
+}
+
+.sidebar nav ul li a i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Główna zawartość */
+.main-content {
+    flex: 1;
+    margin-left: 250px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Stopka */
+footer {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+/* Style dla zawartości */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1, h2 {
+    color: #4CAF50;
+    margin-bottom: 1.5rem;
+}
+
+/* Formularze - stylizacja dla ciemnego motywu */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 20px;
+}
+
+.auth-form {
+    background: #2d2d2d;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #444;
+}
+
+.auth-form h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #4CAF50;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    background-color: #333;
+    border: 1px solid #444;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: all 0.3s;
+    color: white;
+}
+
+.form-group input:focus {
+    border-color: #4CAF50;
+    outline: none;
+    background-color: #3a3a3a;
+}
+
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+.auth-btn:hover {
+    background-color: #3e8e41;
+}
+
+.auth-links {
+    margin-top: 20px;
+    text-align: center;
+    color: #aaa;
+}
+
+.auth-links a {
+    color: #4CAF50;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    color: #ff6b6b;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(255, 0, 0, 0.1);
+    border-radius: 5px;
+    text-align: center;
+    border: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+/* Style dla profilu */
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.profile-info {
+    background: #2d2d2d;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    margin-top: 20px;
+    border: 1px solid #444;
+}
+
+.profile-info p {
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #e0e0e0;
+}
+
+.profile-info strong {
+    color: #4CAF50;
+}
+
+.logout-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* Responsywność */
+@media (max-width: 768px) {
+    .layout-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 1rem;
+    }
+
+    .sidebar nav ul {
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 0;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .sidebar nav ul li a:hover {
+        transform: translateY(3px);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .auth-forms {
+        flex-direction: column;
+    }
+}
+
+/* Dodatkowe style dla ikon */
+.fa-solid {
+    color: #ffffff;
+}
+
+/* Add to your existing CSS */
+.google-auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: 15px;
+}
+
+.google-auth-btn:hover {
+    background-color: #357ABD;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    margin: 15px 0;
+    color: #777;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.auth-divider::before {
+    margin-right: 10px;
+}
+
+.auth-divider::after {
+    margin-left: 10px;
+}
+
