@@ -5,13 +5,15 @@ import os
 from dotenv import load_dotenv
 import random
 import string
+from datetime import datetime
 
 load_dotenv()
 
-app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY") or 'your-secret-key-here'  # Change this!
 
-# Configure Google OAuth
+app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY") or 'your-secret-key-here'
+
+# Google OAuth config
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -26,32 +28,52 @@ google = oauth.register(
     },
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
-# Przykładowa "baza danych" użytkowników
+
+# Pamięciowe "bazy danych"
 users = {}
+user_posts = {}  # {username: [posty]}
+global_posts = []  # [posty]
 
 def generate_username(email):
-    # Extract username part from email
     base_username = email.split('@')[0]
     username = base_username
-    
-    # If username exists, add random digits
     if username in users:
         random_digits = ''.join(random.choices(string.digits, k=4))
         username = f"{base_username}-{random_digits}"
-    
     return username
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def strona_glowna():
-    return render_template('home.html', title="Home")
+    if request.method == 'POST' and 'username' in session:
+        title = request.form.get('title')
+        content = request.form.get('content')
+        if title and content:
+            post = {
+                'username': session['username'],
+                'title': title,
+                'content': content,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            global_posts.append(post)
+            user_posts.setdefault(session['username'], []).append(post)
+            return redirect(url_for('strona_glowna'))
+
+    return render_template('home.html',
+                           title="Strona główna",
+                           logged_in=('username' in session),
+                           username=session.get('username'),
+                           posts=global_posts)
 
 @app.route('/profile')
 def profile():
     if 'username' in session:
-        return render_template('profile.html', 
-                            title="Profile",
-                            logged_in=True,
-                            user={'username': session['username']})
+        username = session['username']
+        user_specific_posts = user_posts.get(username, [])
+        return render_template('profile.html',
+                               title="Profil",
+                               logged_in=True,
+                               user={'username': username},
+                               posts=user_specific_posts)
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -59,12 +81,12 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
-        if username in users and users[username]['password'] == password:
+
+        if username in users and users[username].get('password') == password:
             session['username'] = username
             return redirect(url_for('profile'))
         return render_template('login.html', error="Nieprawidłowa nazwa użytkownika lub hasło")
-    
+
     return render_template('login.html', title="Logowanie")
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -72,14 +94,14 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
         if username in users:
             return render_template('register.html', error="Nazwa użytkownika już istnieje")
-        
+
         users[username] = {'password': password}
         session['username'] = username
         return redirect(url_for('profile'))
-    
+
     return render_template('register.html', title="Rejestracja")
 
 @app.route('/login/google')
@@ -93,21 +115,20 @@ def google_authorize():
         token = google.authorize_access_token()
         if token is None:
             return redirect(url_for('login'))
-        
-        # Verify and get user info
+
         resp = google.get('userinfo')
         if resp.status_code != 200:
             return redirect(url_for('login'))
-        
+
         user_info = resp.json()
         email = user_info.get('email')
         if not email:
             return redirect(url_for('login'))
-        
+
         username = generate_username(email)
         users[username] = {'google_auth': True}
         session['username'] = username
-        
+
         return redirect(url_for('profile'))
     except Exception as e:
         print(f"Error during Google auth: {str(e)}")
@@ -117,8 +138,55 @@ def google_authorize():
 def logout():
     session.pop('username', None)
     return redirect(url_for('strona_glowna'))
+post_counter = 0
+@app.route('/add_post', methods=['GET', 'POST'])
+def add_post():
+    global post_counter
 
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        content = request.form['content']
+        username = session['username']
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        post = {
+            'id': post_counter,
+            'username': username,
+            'title': title,
+            'content': content,
+            'timestamp': timestamp,
+            'likes': 0
+        }
+
+        global_posts.append(post)
+        user_posts.setdefault(username, []).append(post)
+        post_counter += 1
+
+        return redirect(url_for('strona_glowna'))
+
+    return render_template('add_post.html', title="Dodaj Post")
+
+@app.route('/like_post/<int:post_id>', methods=['POST'])
+def like_post(post_id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    if 'liked_posts' not in session:
+        session['liked_posts'] = []
+
+    if post_id not in session['liked_posts']:
+        # Znajdź post po id:
+        for post in global_posts:
+            if post['id'] == post_id:
+                post['likes'] += 1
+                session['liked_posts'].append(post_id)
+                session.modified = True
+                break
+
+    return redirect(url_for('strona_glowna'))
 if __name__ == '__main__':
     app.run(debug=True)
 
-    
