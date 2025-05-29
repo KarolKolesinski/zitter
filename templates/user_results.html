@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="margin-left: 100px;">
+  <h2>Użytkownicy pasujący do: "{{ query }}"</h2>
+
+  {% if users %}
+    <ul>
+    {% for user in users %}
+      <li><strong>{{ user.username }}</strong></li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nie znaleziono użytkowników.</p>
+  {% endif %}
+  </div>
+{% endblock %}

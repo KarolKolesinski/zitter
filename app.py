@@ -1,19 +1,24 @@
 
+
 from flask import Flask, render_template, session, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
-import os
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+import os
 import random
 import string
-from datetime import datetime
 
 load_dotenv()
 
-
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY") or 'your-secret-key-here'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///baza.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Google OAuth config
+db = SQLAlchemy(app)
+
 oauth = OAuth(app)
 google = oauth.register(
     name='google',
@@ -29,50 +34,39 @@ google = oauth.register(
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
 
-# Pamięciowe "bazy danych"
-users = {}
-user_posts = {}  # {username: [posty]}
-global_posts = []  # [posty]
-
 def generate_username(email):
     base_username = email.split('@')[0]
-    username = base_username
-    if username in users:
+    existing_user = User.query.filter_by(username=base_username).first()
+    if existing_user:
         random_digits = ''.join(random.choices(string.digits, k=4))
-        username = f"{base_username}-{random_digits}"
-    return username
+        return f"{base_username}-{random_digits}"
+    return base_username
 
-@app.route('/', methods=['GET', 'POST'])
+
+@app.route('/')
 def strona_glowna():
-    if request.method == 'POST' and 'username' in session:
-        title = request.form.get('title')
-        content = request.form.get('content')
-        if title and content:
-            post = {
-                'username': session['username'],
-                'title': title,
-                'content': content,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            global_posts.append(post)
-            user_posts.setdefault(session['username'], []).append(post)
-            return redirect(url_for('strona_glowna'))
-
+    posts = Post.query.order_by(Post.timestamp.desc()).all()
+    user_likes = []
+    if 'user_id' in session:
+        user_id = session['user_id']
+        # Pobieramy ID postów, które polubił zalogowany użytkownik
+        user_likes = [like.post_id for like in Like.query.filter_by(user_id=user_id).all()]
     return render_template('home.html',
                            title="Strona główna",
                            logged_in=('username' in session),
                            username=session.get('username'),
-                           posts=global_posts)
+                           posts=posts,
+                           user_likes=user_likes)
 
 @app.route('/profile')
 def profile():
     if 'username' in session:
-        username = session['username']
-        user_specific_posts = user_posts.get(username, [])
+        user = User.query.filter_by(username=session['username']).first()
+        user_specific_posts = user.posts if user else []
         return render_template('profile.html',
                                title="Profil",
                                logged_in=True,
-                               user={'username': username},
+                               user=user,
                                posts=user_specific_posts)
     return redirect(url_for('login'))
 
@@ -82,9 +76,12 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        if username in users and users[username].get('password') == password:
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
             session['username'] = username
+            session['user_id'] = user.id
             return redirect(url_for('profile'))
+
         return render_template('login.html', error="Nieprawidłowa nazwa użytkownika lub hasło")
 
     return render_template('login.html', title="Logowanie")
@@ -95,11 +92,15 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-        if username in users:
+        if User.query.filter_by(username=username).first():
             return render_template('register.html', error="Nazwa użytkownika już istnieje")
 
-        users[username] = {'password': password}
+        hashed_pw = generate_password_hash(password)
+        user = User(username=username, password_hash=hashed_pw)
+        db.session.add(user)
+        db.session.commit()
         session['username'] = username
+        session['user_id'] = user.id
         return redirect(url_for('profile'))
 
     return render_template('register.html', title="Rejestracja")
@@ -126,8 +127,14 @@ def google_authorize():
             return redirect(url_for('login'))
 
         username = generate_username(email)
-        users[username] = {'google_auth': True}
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User(username=username, google_auth=True)
+            db.session.add(user)
+            db.session.commit()
+
         session['username'] = username
+        session['user_id'] = user.id
 
         return redirect(url_for('profile'))
     except Exception as e:
@@ -137,56 +144,80 @@ def google_authorize():
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    session.pop('user_id', None)
     return redirect(url_for('strona_glowna'))
-post_counter = 0
+
 @app.route('/add_post', methods=['GET', 'POST'])
 def add_post():
-    global post_counter
-
-    if 'username' not in session:
+    if 'username' not in session or 'user_id' not in session:
         return redirect(url_for('login'))
 
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
-        username = session['username']
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        post = {
-            'id': post_counter,
-            'username': username,
-            'title': title,
-            'content': content,
-            'timestamp': timestamp,
-            'likes': 0
-        }
-
-        global_posts.append(post)
-        user_posts.setdefault(username, []).append(post)
-        post_counter += 1
-
+        post = Post(title=title, content=content, user_id=session['user_id'])
+        db.session.add(post)
+        db.session.commit()
         return redirect(url_for('strona_glowna'))
 
     return render_template('add_post.html', title="Dodaj Post")
 
-@app.route('/like_post/<int:post_id>', methods=['POST'])
+@app.route('/search_users', methods=['GET'])
+def search_users():
+    query = request.args.get('q', '')
+    if query:
+        users = User.query.filter(User.username.ilike(f"%{query}%")).all()
+    else:
+        users = []
+
+    return render_template('user_results.html',
+                           title="Wyniki użytkowników",
+                           query=query,
+                           users=users)
+
+@app.route('/like/<int:post_id>', methods=['POST'])
 def like_post(post_id):
-    if 'username' not in session:
+    user_id = session.get('user_id')
+    if not user_id:
         return redirect(url_for('login'))
 
-    if 'liked_posts' not in session:
-        session['liked_posts'] = []
+    existing_like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
+    if existing_like:
+        return redirect(url_for('strona_glowna'))
 
-    if post_id not in session['liked_posts']:
-        # Znajdź post po id:
-        for post in global_posts:
-            if post['id'] == post_id:
-                post['likes'] += 1
-                session['liked_posts'].append(post_id)
-                session.modified = True
-                break
+    post = Post.query.get(post_id)
+    if post.user_id == user_id:
+        return redirect(url_for('strona_glowna'))
 
+    like = Like(user_id=user_id, post_id=post_id)
+    post.likes += 1
+    db.session.add(like)
+    db.session.commit()
     return redirect(url_for('strona_glowna'))
-if __name__ == '__main__':
-    app.run(debug=True)
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True)
+    password_hash = db.Column(db.String(200))
+    google_auth = db.Column(db.Boolean, default=False)
+    posts = db.relationship('Post', backref='author', lazy=True)
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    content = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    likes = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+    __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='unique_like'),)
+
+
+if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

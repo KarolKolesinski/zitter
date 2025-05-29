@@ -348,4 +348,88 @@ h1, h2 {
     font-size: 16px;
     color: #008243;
   }
+/* Styl dla formularzy wyszukiwania */
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-form input[type="text"] {
+  padding: 8px 12px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 250px;
+}
+
+.search-form button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-form button:hover {
+  background-color: #45a049;
+}
+
+/* Styl przycisku „Dodaj post” */
+.add-post-btn {
+  padding: 10px 18px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 10px 0;
+  transition: background-color 0.3s ease;
+}
+
+.add-post-btn:hover {
+  background-color: #0056b3;
+}
+.search-form {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.search-form input[type="text"] {
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  width: 260px;
+  transition: border-color 0.3s ease;
+}
+
+.search-form input[type="text"]:focus {
+  border-color: #007BFF;
+  outline: none;
+}
+
+.search-form button {
+  padding: 10px 18px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.search-form button:hover {
+  background-color: #0056b3;
+}
+
 

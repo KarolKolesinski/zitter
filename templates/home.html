@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+<div style="margin-left: 100px;">
 {% if logged_in %}
   <p>Zalogowany jako {{ username }}</p>
   <a href="{{ url_for('add_post') }}">
     <button>Dodaj post</button>
   </a>
+  <form action="{{ url_for('search_users') }}" method="get" style="margin-bottom: 20px;">
+    <input type="text" name="q" placeholder="Szukaj użytkownika..." required>
+    <button type="submit">Szukaj profilu</button>
+</form>
 {% else %}
   <p><a href="{{ url_for('login') }}">Zaloguj się</a>, aby dodać post.</p>
 {% endif %}
@@ -15,18 +20,19 @@
   <div class="post-card">
     <div class="post-title">{{ post.title }}</div>
     <div class="post-meta">
-      {{ post.timestamp }} | autor: <strong>{{ post.username }}</strong>
+      {{ post.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} | autor: <strong>{{ post.author.username }}</strong>
     </div>
     <div class="post-content">{{ post.content }}</div>
     <form action="{{ url_for('like_post', post_id=post.id) }}" method="post">
-      <button type="submit" 
-        {% if session.liked_posts is defined and post.id in session.liked_posts %}disabled{% endif %}>
-        ❤️ Polub ({{ post.likes }})
-      </button>
-    </form>
+  <button type="submit"
+    {% if user_likes and post.id in user_likes %}disabled{% endif %}>
+    ❤️ Polub ({{ post.likes }})
+  </button>
+</form>
   </div>
   {% endfor %}
 {% else %}
   <p>Brak postów do wyświetlenia.</p>
 {% endif %}
+</div>
 {% endblock %}
