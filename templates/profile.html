@@ -1,22 +1,21 @@
-<!-- templates/profile.html -->
 {% extends "base.html" %}
-
 {% block content %}
-<div class="profile-container">
-    <h1>Twój profil</h1>
-    
-    <div class="profile-info">
+<div class="profile-container" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>Twój profil</h1>
         <p>Witaj, <strong>{{ user.username }}</strong>!</p>
-        
-        <a href="{{ url_for('logout') }}" class="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i> Wyloguj się
-        </a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Wyloguj się</a>
+    </div>
+    <div>
+        {% set profile_pic = user.profile_picture if user.profile_picture else 'default-image/avatar.png' %}
+        <img src="{{ url_for('static', filename='images/' ~ profile_pic) }}" 
+             alt="Profilowe" style="width: 60px; height: 60px; border-radius: 50%;">
+
+        <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edytuj profil</a>
     </div>
 </div>
-<div class="container">
-    <h1>Witaj, {{ user.username }}!</h1>
-   
 
+<div class="container">
     <h2>Twoje posty:</h2>
     {% if posts %}
         <ul>
@@ -25,16 +24,11 @@
                     <h3>{{ post.title }}</h3>
                     <p>{{ post.content }}</p>
                     <small>{{ post.timestamp }}</small>
-                    
-                    
                 </li>
             {% endfor %}
         </ul>
-        
     {% else %}
         <p>Nie dodałeś jeszcze żadnych postów.</p>
     {% endif %}
 </div>
 {% endblock %}
-
-

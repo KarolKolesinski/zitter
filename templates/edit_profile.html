@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h1>Edytuj profil</h1>
+    
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        <div>
+            <label>Nowa nazwa użytkownika:</label><br>
+            <input type="text" name="username" value="{{ user.username }}">
+        </div>
+        <br>
+        <div>
+            <label>Zdjęcie profilowe:</label><br>
+            <input type="file" name="profile_picture">
+        </div>
+        <br>
+        <button type="submit">Zapisz zmiany</button>
+    </form>
+</div>
+{% endblock %}
