@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, session, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 import os
@@ -34,8 +33,11 @@ users = {}
 user_posts = {}  # {username: [posty]}
 global_posts = []  # [posty]
 
-def generate_username(email):
+def generate_username(email, is_google=False):
     base_username = email.split('@')[0]
+    if is_google:
+        return base_username  # Dla Google zwracamy czystą nazwę bez dodatkowych cyfr
+    
     username = base_username
     if username in users:
         random_digits = ''.join(random.choices(string.digits, k=4))
@@ -125,7 +127,7 @@ def google_authorize():
         if not email:
             return redirect(url_for('login'))
 
-        username = generate_username(email)
+        username = generate_username(email, is_google=True)  # Dodajemy is_google=True
         users[username] = {'google_auth': True}
         session['username'] = username
 
