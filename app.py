@@ -1,5 +1,3 @@
-
-
 from flask import Flask, render_template, session, request, redirect, url_for
 from authlib.integrations.flask_client import OAuth
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -34,10 +32,21 @@ google = oauth.register(
     jwks_uri='https://www.googleapis.com/oauth2/v3/certs'
 )
 
-def generate_username(email):
+def generate_username(email, is_google=False):
     base_username = email.split('@')[0]
-    existing_user = User.query.filter_by(username=base_username).first()
-    if existing_user:
+    if is_google:
+        # Sprawdzamy czy użytkownik już istnieje
+        user = User.query.filter_by(username=base_username).first()
+        if user:
+            # Jeśli istnieje, dodajemy losowe cyfry
+            random_digits = ''.join(random.choices(string.digits, k=4))
+            return f"{base_username}-{random_digits}"
+        return base_username
+    
+    # Dla normalnej rejestracji
+    username = base_username
+    user = User.query.filter_by(username=username).first()
+    if user:
         random_digits = ''.join(random.choices(string.digits, k=4))
         return f"{base_username}-{random_digits}"
     return base_username
@@ -62,12 +71,13 @@ def strona_glowna():
 def profile():
     if 'username' in session:
         user = User.query.filter_by(username=session['username']).first()
-        user_specific_posts = user.posts if user else []
-        return render_template('profile.html',
-                               title="Profil",
-                               logged_in=True,
-                               user=user,
-                               posts=user_specific_posts)
+        if user:
+            user_specific_posts = user.posts
+            return render_template('profile.html',
+                                   title="Profil",
+                                   logged_in=True,
+                                   user=user,
+                                   posts=user_specific_posts)
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -126,7 +136,7 @@ def google_authorize():
         if not email:
             return redirect(url_for('login'))
 
-        username = generate_username(email)
+        username = generate_username(email, is_google=True)
         user = User.query.filter_by(username=username).first()
         if not user:
             user = User(username=username, google_auth=True)
@@ -135,7 +145,6 @@ def google_authorize():
 
         session['username'] = username
         session['user_id'] = user.id
-
         return redirect(url_for('profile'))
     except Exception as e:
         print(f"Error during Google auth: {str(e)}")
@@ -177,16 +186,16 @@ def search_users():
 
 @app.route('/like/<int:post_id>', methods=['POST'])
 def like_post(post_id):
-    user_id = session.get('user_id')
-    if not user_id:
+    if 'user_id' not in session:
         return redirect(url_for('login'))
 
+    user_id = session['user_id']
     existing_like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
     if existing_like:
         return redirect(url_for('strona_glowna'))
 
     post = Post.query.get(post_id)
-    if post.user_id == user_id:
+    if not post or post.user_id == user_id:
         return redirect(url_for('strona_glowna'))
 
     like = Like(user_id=user_id, post_id=post_id)
@@ -216,9 +225,7 @@ class Like(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='unique_like'),)
 
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
-
